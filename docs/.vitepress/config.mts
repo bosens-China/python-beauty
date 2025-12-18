@@ -6,14 +6,22 @@ export default defineConfig({
   description: "现代类型视角的 Python 入门",
   base: "/python-beauty",
   lang: "zh-CN",
+  head: [
+    [
+      "link",
+      { rel: "icon", type: "image/svg+xml", href: "/python-beauty/logo.svg" },
+    ],
+  ],
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       { text: "开始阅读", link: "/intro" },
       { text: "章节目录", link: "/ch01-env" },
       // 如果你有 GitHub 仓库，可以在这里加链接
-      // { text: 'GitHub', link: 'https://github.com/yourname/python-beauty' }
+      { text: "GitHub", link: "https://github.com/bosens-China/python-beauty" },
     ],
+
+    logo: "/logo.svg",
     siteTitle: "Python 之美",
 
     sidebar: [
@@ -87,7 +95,7 @@ export default defineConfig({
     ],
 
     socialLinks: [
-      { icon: "github", link: "https://github.com/vuejs/vitepress" },
+      { icon: "github", link: "https://github.com/bosens-China/python-beauty" },
     ],
 
     // 页脚
@@ -125,7 +133,8 @@ export default defineConfig({
 
     // 编辑链接
     editLink: {
-      pattern: "https://github.com/yourname/repo/edit/main/docs/:path",
+      pattern:
+        "https://github.com/bosens-China/python-beauty/edit/main/docs/:path",
       text: "在 GitHub 上编辑此页",
     },
 

@@ -15,7 +15,7 @@
 
 ## 1. 秩序来自约定，而非强制 (Order via Convention)
 
-这是 Python 文化中最核心的部分。
+这是 Python 文化中最核心![alt text](image.png)的部分。
 
 - 我们用 `_variable` 表示私有，但解释器允许你在外部访问它。
 - 我们写 `def add(a: int)`，但解释器允许你传字符串。
