@@ -1,17 +1,36 @@
 # 第 10 章：协议 (Protocols) —— 鸭子类型的静态化
 
-> **"Action is eloquence."** > **“行动即是雄辩。”**
+> **"Action is eloquence."**
+>
+> **“行动即是雄辩。”**
+>
 > — _威廉·莎士比亚，《科利奥兰纳斯》 (William Shakespeare, Coriolanus)_
 
 ---
 
+::: tip 💡 上一章答案揭晓
+为什么 `json.dumps(my_dataclass)` 会报错？
+因为 Python 标准库的 `json` 模块默认只认识基础类型（dict, list, str, int 等），不认识你自定义的类。
+**解决方案**：使用 `dataclasses.asdict` 将对象转回字典。
+
+```python
+import json
+from dataclasses import asdict
+
+data = json.dumps(asdict(user_obj)) # ✅ 成功序列化
+```
+
+:::
+
 这句话完美地诠释了本章的主题：我们不关心对象的**名字**（它继承自谁），我们只关心它的**行动**（它能做什么）。
+
+在 Python 的古老传说中，这被称为 **鸭子类型 (Duck Typing)**：“如果它走起路来像鸭子，叫起来像鸭子，那它就是鸭子。”
 
 ## 10.1 继承的困局：名义类型 (Nominal Typing)
 
 假设我们在编写一个游戏，需要一个函数来处理“飞行”。
 
-**传统的 OOP 思路**:
+**传统的 OOP 思路 (名义类型)**：
 
 ```python
 class Bird:
@@ -26,9 +45,9 @@ def let_it_fly(entity: Bird):
     entity.fly()
 ```
 
-为了解决这个问题，你可能需要创建一个公共基类 `Flyable`，然后让 `Bird` 和 `Airplane` 都去继承它。
+为了解决这个问题，在 Java 或旧式 Python 中，你需要创建一个公共基类 `Flyable`，然后让 `Bird` 和 `Airplane` 都去继承它。
 
-**痛点**：如果你无法修改 `Airplane` 的源码（它是第三方库提供的）怎么办？你没法给它加上父类。这就是继承的耦合问题。
+**痛点**：如果你无法修改 `Airplane` 的源码（比如它是第三方库提供的）怎么办？你没法给它加上父类。这就是继承带来的**强耦合**。
 
 ## 10.2 协议：只看结构，不问出身
 
@@ -40,7 +59,7 @@ from typing import Protocol
 # 1. 定义一个协议：任何实现了 fly 方法的东西，都是 Flyer
 class Flyer(Protocol):
     def fly(self) -> None:
-        ...  # 使用 ... 表示这是个占位符，不需要实现
+        ...  # 这里的 ... 是 Python 的合法语法 (Ellipsis)，表示占位符
 
 # 2. 具体的类（根本不需要知道 Flyer 的存在）
 class Bird:
@@ -60,25 +79,23 @@ launch(Bird())
 launch(Airplane())
 ```
 
-静态检查器（pyright/mypy）会检查：`Bird` 有 `fly` 方法吗？有。`Airplane` 有吗？有。那就通过。
+静态检查器（pyright）会检查：`Bird` 有 `fly` 方法吗？有。`Airplane` 有吗？有。那就通过。
 
-### 📝 TS 开发者便签：Interface 的完美对应
+::: info 📝 TS 开发者便签：Interface 的完美对应
+这是本书中最重要的一次概念对齐。
 
-> 这是本书中最重要的一次概念对齐。
->
-> - **Python Protocol** = **TS Interface**
->
-> 在 TS 中：
->
-> ```typescript
-> interface Flyer {
->   fly(): void;
-> }
-> function launch(entity: Flyer) { ... }
-> // 只要对象有 fly 方法，就能传进去，不需要 implements Flyer
-> ```
->
-> Python 的 Protocol 实现了完全相同的 **Structural Subtyping（结构化子类型）** 机制。你不需要像 Java 那样显式 `implements` 或像 Python 旧式 OOP 那样继承基类。只要**形状 (Shape)** 对了，类型就对了。
+- **Python Protocol** = **TS Interface**
+
+在 TS 中：
+
+```typescript
+interface Flyer { fly(): void; }
+function launch(entity: Flyer) { ... }
+// 只要对象有 fly 方法，就能传进去，不需要 implements Flyer
+```
+
+Python 的 Protocol 实现了完全相同的 **Structural Subtyping（结构化子类型）** 机制。你不需要像 Java 那样显式 `implements` 或像 Python 旧式 OOP 那样继承基类。只要**形状 (Shape)** 对了，类型就对了。
+:::
 
 ## 10.3 复杂协议与属性
 
@@ -87,6 +104,7 @@ launch(Airplane())
 ```python
 class Named(Protocol):
     # 定义一个只读属性 name
+    # 注意：这只是为了类型检查，具体的类可以用普通变量，也可以用 @property
     @property
     def name(self) -> str: ...
 
@@ -98,7 +116,7 @@ class User:
         self.name = name
 
 class Dog:
-    name = "Buddy"
+    name = "Buddy" # 类属性也算
 
 # ✅ User 和 Dog 都满足 Named 协议
 greet(User("Alice"))
@@ -107,7 +125,7 @@ greet(Dog())
 
 ## 10.4 运行时检查：`@runtime_checkable`
 
-默认情况下，`Protocol` 只能被静态检查工具识别。如果你试图在运行时使用 `isinstance(obj, Flyer)`，Python 默认会报错，因为普通的 Protocol 类不具备运行时的检查逻辑。
+默认情况下，`Protocol` 只能被静态检查工具识别。如果你试图在运行时使用 `isinstance(obj, Flyer)`，Python 默认会报错。因为普通的 Protocol 类在运行时会被擦除大部分逻辑，不具备检查能力。
 
 如果你需要这种能力，需要加上装饰器：
 
@@ -142,6 +160,7 @@ class Runner(Protocol):
     def run(self) -> None: ...
 
 # 定义一个新协议，组合了两个协议的功能
+# 相当于 SuperHero = Flyer & Runner
 class SuperHero(Flyer, Runner, Protocol):
     pass
 
@@ -161,28 +180,30 @@ def action(hero: SuperHero):
 - **`Mapping[K, V]`**: 类似 dict 的对象。
 - **`Callable[...]`**: 函数或实现了 `__call__` 的对象。
 
-**最佳实践**：
-函数的参数类型应该**越宽泛越好**。
+**最佳实践**：函数的参数类型应该**越宽泛越好**。
 
-```python
-from collections.abc import Iterable, Sequence
+::: code-group
 
-# ❌ 限制太死：只能传 list
-def process_names_bad(names: list[str]): ...
-
-# ✅ 更好：可以传 list, tuple, set, 甚至生成器
-def process_names_good(names: Iterable[str]):
+```python [❌ 限制太死]
+# 只能传 list，传 tuple 或 set 会报错
+def process_names(names: list[str]):
     for name in names:
-        ...
-
-# ✅ 如果你需要索引访问 (names[0])，就用 Sequence
-def get_first(names: Sequence[str]) -> str:
-    return names[0]
+        print(name)
 ```
 
----
+```python [✅ 更加通用]
+from collections.abc import Iterable
 
-**本章小结**
+# 可以传 list, tuple, set, 甚至生成器
+# 只要能被 for 循环遍历即可
+def process_names(names: Iterable[str]):
+    for name in names:
+        print(name)
+```
+
+:::
+
+## 本章小结
 
 Protocol 填补了 Python 类型系统的最后一块短板，让 Python 拥有了和 TypeScript 一样灵活且安全的结构化类型系统。
 
@@ -194,8 +215,11 @@ Protocol 填补了 Python 类型系统的最后一块短板，让 Python 拥有�
 
 下一章，我们将讨论 **泛型 (Generics)**。在 Python 3.12 中，泛型语法迎来了一次史诗级的更新，终于不再像以前那么丑陋了。
 
-> **思考题**：
-> `list` 类型是 `Sequence` 协议的子类型（Subtype）。
-> 那么 `list[Dog]` 是 `Sequence[Animal]` 的子类型吗？（假设 Dog 继承自 Animal）。
-> 换句话说，如果一个函数接收 `Sequence[Animal]`，我能传一个 `list[Dog]` 给它吗？
-> 这涉及到了 **协变 (Covariance)** 的概念，TS 开发者对此应该很敏锐。我们下一章揭晓。
+::: tip 🧠 课后思考
+`list` 类型是 `Sequence` 协议的子类型（Subtype）。
+
+那么 `list[Dog]` 是 `Sequence[Animal]` 的子类型吗？（假设 Dog 继承自 Animal）。
+换句话说，如果一个函数接收 `Sequence[Animal]`，我能传一个 `list[Dog]` 给它吗？
+
+这涉及到了 **协变 (Covariance)** 的概念，TS 开发者对此应该很敏锐。我们下一章揭晓。
+:::

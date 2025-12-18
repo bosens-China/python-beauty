@@ -1,9 +1,19 @@
 # 第 13 章：装饰器 (Decorators)
 
-> **"The apparel oft proclaims the man."** > **“衣着往往显示人品。”**
+> **"The apparel oft proclaims the man."**
+>
+> **“衣着往往显示人品。”**
+>
 > — _威廉·莎士比亚，《哈姆雷特》 (William Shakespeare, Hamlet)_
 
 ---
+
+::: tip 💡 上一章答案揭晓
+Python 的 `TypeGuard` 能像 TS 的 `asserts` 那样直接改变后续作用域的变量类型吗？
+**不能。**
+Python 的 `TypeGuard` 必须配合 `if` 语句使用（`if is_str_list(x): ...`）。
+目前 Python 还没有类似 TS `asserts val is String` 的机制，这意味着你不能写一个裸露的断言函数来“原地”收窄类型。这是 Python 类型系统与控制流结合的一个限制。
+:::
 
 装饰器的本质很简单：**它是一个函数，接受一个函数作为参数，并返回一个新的函数。** 它就像给原来的函数穿上了一层“外套”，在不修改原函数代码的情况下，增加额外的功能（如日志、计时、鉴权）。
 
@@ -31,22 +41,22 @@ say_hello()
 # After calling function
 ```
 
-这里 `@my_logger` 只是语法糖。它等价于：
+这里 `@my_logger` 只是语法糖。它完全等价于：
 `say_hello = my_logger(say_hello)`
 
-### 📝 TS 开发者便签：High-Order Functions
+::: info 📝 TS 开发者便签：High-Order Functions
+这就是标准的**高阶函数（Higher-Order Function）**。
+在 JS/TS 中你经常这样做：
 
-> 这就是标准的高阶函数（Higher-Order Function）。
-> 在 JS/TS 中你经常这样做：
->
-> ```typescript
-> const withLog = (fn) => () => {
->   console.log("Before");
->   fn();
-> };
-> ```
->
-> Python 的装饰器语法 `@` 只是自动帮你做了这个 wrapping 的动作。
+```typescript
+const withLog = (fn) => () => {
+  console.log("Before");
+  fn();
+};
+```
+
+Python 的装饰器语法 `@` 只是自动帮你做了这个 wrapping 的动作。
+:::
 
 ## 13.2 痛点：类型丢失与元数据丢失
 
@@ -64,11 +74,12 @@ say_hello()
 1.  `**P` (ParamSpec): 代表原函数的**参数列表**（无论它有多少个参数，叫什么名字）。
 2.  `R` (TypeVar): 代表原函数的**返回值类型**。
 
-```python
+::: code-group
+
+```python [✅ 现代写法 (Python 3.12+)]
 from functools import wraps
 from typing import Callable
 
-# Python 3.12+ 新泛型语法
 # [**P, R] 声明了两个泛型：P 是参数包，R 是返回值
 def standard_logger[**P, R](func: Callable[P, R]) -> Callable[P, R]:
 
@@ -77,7 +88,7 @@ def standard_logger[**P, R](func: Callable[P, R]) -> Callable[P, R]:
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
         print(f"Calling: {func.__name__}")
 
-        # 执行原函数
+        # P.args 和 P.kwargs 就像传送带，把参数原封不动地传给原函数
         result = func(*args, **kwargs)
 
         print(f"Finished: {func.__name__}")
@@ -85,6 +96,16 @@ def standard_logger[**P, R](func: Callable[P, R]) -> Callable[P, R]:
 
     return wrapper
 ```
+
+```python [❌ 旧式/错误写法]
+# 这种写法会让 add 变成 (Any) -> Any，彻底丢失类型提示
+def bad_logger(func):
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper
+```
+
+:::
 
 ### 验证效果
 
@@ -137,7 +158,7 @@ def retry(max_retries: int = 3, delay: float = 1.0):
 
             if last_exception:
                 raise last_exception
-            raise RuntimeError("Unreachable") # 仅为了类型检查通过
+            raise RuntimeError("Unreachable") # 仅为了让类型检查器知道这里肯定会抛异常
 
         return wrapper
 
@@ -150,11 +171,20 @@ def fetch_data(url: str) -> dict:
     ...
 ```
 
-### 📝 TS 开发者便签：Decorators in TS
+::: warning ⚠️ Import Time vs Call Time
+**严重警示**：
 
-> - **TS (Experimental / Stage 3)**: TS 的装饰器主要用于 **Class** 及其成员（Method, Property）。虽然也可以装饰类方法来实现类似功能，但在 TS 中装饰独立的 Function 是不直接支持的（你必须手动 wrap）。
-> - **Python**: 装饰器主要用于 **Function**（虽然也可以装饰 Class）。
-> - **执行时机**：记住，Python 的装饰器代码（`wrapper` 外面的部分）是在 **Import Time**（模块加载时）执行的，而 `wrapper` 内部的代码是在 **Call Time**（函数调用时）执行的。这一点经常被忽视，导致在 Import 阶段做太重的操作（如连接数据库）拖慢启动速度。
+- **Import Time (导入时)**：Python 加载模块时，会执行装饰器函数（第一层和第二层）。
+- **Call Time (运行时)**：只有当你真正调用 `fetch_data()` 时，才会执行 `wrapper`（第三层）。
+
+**千万不要**在装饰器的外层（Factory/Decorator 层）编写耗时的操作（如连接数据库、请求网络）。这会导致你的程序启动极慢，甚至在 import 阶段就崩溃。所有的业务逻辑都应该放在 `wrapper` 内部。
+:::
+
+::: info 📝 TS 开发者便签：Decorators in TS
+
+- **TS**: 装饰器目前主要用于 **Class** 及其成员（Method, Property）。在 TS 中装饰独立的 Function 并不直接支持（通常用高阶函数手动 wrap）。
+- **Python**: 装饰器主要用于 **Function**（虽然也可以装饰 Class）。
+  :::
 
 ## 13.5 类装饰器
 
@@ -182,14 +212,12 @@ class EmailService:
     pass
 
 print(component_registry)
-# {'LoginService': <class 'LoginService'>, ...}
+# 输出: {'LoginService': <class 'LoginService'>, ...}
 ```
 
 这在实现“依赖注入”或“插件系统”时非常有用。
 
----
-
-**本章小结**
+## 本章小结
 
 装饰器是 Python 元编程（Metaprogramming）的入口。
 
@@ -201,14 +229,17 @@ print(component_registry)
 
 下一章，我们将介绍 Python 独有的优雅语法 —— **上下文管理器 (Context Managers)**。对于 TS 开发者来说，这是 JS 语言标准中长期缺失（虽然 `using` 关键字正在路上）的一块拼图。
 
-> **思考题**：
-> 装饰器可以叠加使用：
->
-> ```python
-> @decorator1
-> @decorator2
-> def foo(): pass
-> ```
->
-> 请问执行顺序是怎样的？是 `decorator1(decorator2(foo))` 还是反过来？
-> 如果 `decorator1` 打印 "A"，`decorator2` 打印 "B"，在**函数定义时**会打印什么？在**函数调用时** wrapper 的执行顺序又是怎样的？
+::: tip 🧠 课后思考
+装饰器可以叠加使用：
+
+```python
+@decorator1
+@decorator2
+def foo(): pass
+```
+
+**思考题**：
+
+1.  **包裹顺序**：它等价于 `decorator1(decorator2(foo))` 还是反过来？
+2.  **执行顺序**：如果 `decorator1` 打印 "A"，`decorator2` 打印 "B"，在**函数定义时**（Import Time）屏幕上打印的顺序是什么？在**函数调用时**（Call Time）Wrapper 的执行顺序又是怎样的？
+    :::

@@ -1,6 +1,9 @@
 # 第 16 章：异步编程 (AsyncIO)
 
-> **"We must take the current when it serves, Or lose our ventures."** > **“我们要把握好时机，否则就会失去良机。”**
+> **"We must take the current when it serves, Or lose our ventures."**
+>
+> **“我们要把握好时机，否则就会失去良机。”**
+>
 > — _威廉·莎士比亚，《尤利乌斯·凯撒》 (William Shakespeare, Julius Caesar)_
 
 ---
@@ -44,14 +47,14 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-### 📝 TS 开发者便签：Promise (Eager) vs Coroutine (Lazy)
+::: info 📝 TS 开发者便签：Promise (Eager) vs Coroutine (Lazy)
+这是最大的认知陷阱：
 
-> 这是最大的认知陷阱：
->
-> - **TS (Eager)**: 当你调用 `const p = fetchData(1)` 时，JS 引擎**立即开始**执行该异步任务，并返回一个 `Promise`。你不能“暂停”它的启动。
-> - **Python (Lazy)**: 当你调用 `c = fetch_data(1)` 时，函数体**根本不会执行**。它返回一个协程对象（Coroutine Object）。它就像一个“冷”的 Promise。只有当你 `await c` 或者显式调度它 (`create_task`) 时，它才会开始运行。
->
-> 此外，Python 脚本默认没有 Event Loop，你必须用 `asyncio.run()` 手动启动它（而在 Node.js 中 Loop 是与生俱来的）。
+- **TS (Eager)**: 当你调用 `const p = fetchData(1)` 时，JS 引擎**立即开始**执行该异步任务，并返回一个 `Promise`。你不能“暂停”它的启动。
+- **Python (Lazy)**: 当你调用 `c = fetch_data(1)` 时，函数体**根本不会执行**。它返回一个协程对象（Coroutine Object）。它就像一个“冷”的 Promise。只有当你 `await c` 或者显式调度它 (`create_task`) 时，它才会开始运行。
+
+此外，Python 脚本默认没有 Event Loop，你必须用 `asyncio.run()` 手动启动它（而在 Node.js 中 Loop 是与生俱来的）。
+:::
 
 ## 16.2 结构化并发：`TaskGroup` (Python 3.11+)
 
@@ -95,7 +98,7 @@ async def main():
 
 如果你在 `async def` 里写了 CPU 密集型代码（比如解压大文件、处理图片）或者调用了同步 IO（比如 `time.sleep`, `requests.get`），整个 Event Loop 就会卡死。
 
-**错误示范**：
+::: danger 🛑 绝对禁止
 
 ```python
 async def bad_handler():
@@ -103,6 +106,8 @@ async def bad_handler():
     # 在这 5 秒内，服务器无法响应任何其他请求（心跳包丢失、数据库断连...）
     time.sleep(5)
 ```
+
+:::
 
 **正确示范**：
 使用 `asyncio.to_thread` (Python 3.9+) 或 `loop.run_in_executor` 将阻塞操作扔到**线程池**中。
@@ -120,12 +125,12 @@ async def good_handler():
     response = await asyncio.to_thread(sync_get_url, "https://google.com")
 ```
 
-### 📝 TS 开发者便签：Worker Threads
+::: info 📝 TS 开发者便签：Worker Threads
+Node.js 也是单线程 Loop，但它的标准库（`fs`, `http`）底层都是异步的。
+Python 的生态历史包袱重，很多老牌库（如 `requests`, `pandas`, `opencv`）都是**同步阻塞**的。
 
-> Node.js 也是单线程 Loop，但它的标准库（`fs`, `http`）底层都是异步的。
-> Python 的生态历史包袱重，很多老牌库（如 `requests`, `pandas`, `opencv`）都是**同步阻塞**的。
->
-> 在 FastAPI 中，如果你要用这些老库，必须把它们扔到 `run_in_executor` / `to_thread` 里，或者寻找它们的异步替代品（如 `httpx`, `aiofiles`）。
+在 FastAPI 中，如果你要用这些老库，必须把它们扔到 `run_in_executor` / `to_thread` 里，或者寻找它们的异步替代品（如 `httpx`, `aiofiles`）。
+:::
 
 ## 16.4 异步上下文管理器：`async with`
 
@@ -183,9 +188,7 @@ async def main():
             tg.create_task(worker(sem, i))
 ```
 
----
-
-**本章小结**
+## 本章小结
 
 Python 的 `asyncio` 赋予了它处理高并发网络 IO 的能力（这是 FastAPI 性能接近 Go 的原因）。
 

@@ -1,11 +1,23 @@
 # 第 15 章：并发的抉择 —— 成本与模型
 
-> **"Two stars keep not their motion in one sphere."** > **“两个星球不能在同一个轨道上运行。”**
+> **"Two stars keep not their motion in one sphere."**
+>
+> **“两个星球不能在同一个轨道上运行。”**
+>
 > — _威廉·莎士比亚，《亨利四世》 (William Shakespeare, Henry IV)_
 
 ---
 
-这句诗完美地隐喻了 Python 的 **GIL**：在同一个解释器进程中，同一时刻只能有一个线程在执行 Python 字节码。但在此之前，我们需要先谈谈 Python 代码运行的“价格”。
+::: tip 💡 上一章答案揭晓
+如果在 `with` 块中需要调用 `await`，普通的上下文管理器是不够的。
+我们需要使用 **异步上下文管理器 (Async Context Managers)**。
+
+- 语法：`async with`。
+- 魔术方法：`__aenter__` (注意多了一个 `a`) 和 `__aexit__`。这两个方法本身必须是 `async def` 定义的协程。
+  这在数据库连接池（如 `databases`, `asyncpg`）中极其常见。
+  :::
+
+莎士比亚的这句诗完美地隐喻了 Python 的 **GIL (Global Interpreter Lock)**：在同一个解释器进程中，同一时刻只能有一个线程在执行 Python 字节码。但在此之前，我们需要先谈谈 Python 代码运行的“价格”。
 
 ## 15.1 Python 的真实成本模型 (The Cost Model)
 
@@ -21,13 +33,18 @@
 
 **残酷的对比**：
 
-```python
-# 方案 A：扁平结构（Pythonic & Fast）
+::: code-group
+
+```python [方案 A：扁平结构 (Fast)]
+# 简单的循环和加法
+# Python 解释器能高效处理这种基本指令
 total = 0
 for i in range(1000):
     total += i
+```
 
-# 方案 B：过度抽象（Enterprise & Slow）
+```python [方案 B：过度抽象 (Slow)]
+# 企业级抽象：Getter/Setter + 方法调用
 class NumberProcessor:
     @property
     def value(self): return self._val
@@ -36,27 +53,32 @@ class NumberProcessor:
         self._val += i
 
 # 方案 B 比 方案 A 慢 5-10 倍不止。
+# 每次 process 调用都有栈帧开销，每次属性访问都有查找开销。
 ```
+
+:::
 
 ### 15.1.2 为什么推崇“扁平代码”？
 
 Python 之禅说：“**Flat is better than nested**”。
 这不仅是为了可读性，更是为了性能。
 
-- **List Comprehension (列表推导式)** 比 `for` 循环快，因为它是 C 语言层面的循环，减少了 Python 字节码的解释开销。
+- **List Comprehension (列表推导式)** 通常比 `for` 循环快，因为它是 C 语言层面的循环，减少了 Python 字节码的解释开销。
 - **内置函数 (sum, map)** 通常比手写循环快。
 
-### 📝 TS 开发者便签：V8 vs CPython
+::: info 📝 TS 开发者便签：V8 vs CPython
 
-> - **V8 (Chrome/Node)**: 拥有极其激进的 JIT (Just-In-Time) 编译器。它会把你的热点 JS 代码编译成机器码，并且通过 Inline Caching (内联缓存) 消除属性查找的开销。所以你在 JS 里写深层对象嵌套，性能损耗并不大。
-> - **CPython (标准 Python)**: 是解释执行的（虽然有 pyc 字节码，但那是给虚拟机看的）。每一次属性访问、每一次加法，通常都需要经过解释器的动态分发。
-> - **结论**：在 Python 中，**不要过度封装**。在热点代码路径（Hot Path）上，保持简单和扁平。
+- **V8 (Chrome/Node)**: 拥有极其激进的 JIT (Just-In-Time) 编译器。它会把你的热点 JS 代码编译成机器码，并且通过 Inline Caching (内联缓存) 消除属性查找的开销。所以你在 JS 里写深层对象嵌套，性能损耗并不大。
+- **CPython (标准 Python)**: 是解释执行的。每一次属性访问、每一次加法，通常都需要经过解释器的动态分发。
+
+**结论**：在 Python 中，**不要过度封装**。在热点代码路径（Hot Path）上，保持简单和扁平。
+:::
 
 ## 15.2 GIL：被误解的“恶魔”
 
 有了成本概念，我们再来看并发。你可能听说过：“因为有 GIL，所以 Python 的多线程是假的。”
 
-**这是片面的。** GIL 的存在是为了保护解释器内部内存管理（引用计数）的线程安全。
+**这是片面的。** GIL 的存在是为了保护解释器内部内存管理（引用计数）的线程安全。你可以把它想象成**唯一的通行证**，任何线程想执行 Python 代码，必须先拿到这个通行证。
 
 ### 15.2.1 GIL 的工作机制
 
@@ -89,6 +111,7 @@ def fetch_url(url: str) -> str:
 def main():
     urls = ["url1", "url2", "url3"]
     # 3 个线程并行，总耗时约 1 秒，而不是 3 秒
+    # max_workers 决定了同时有多少个线程在跑
     with ThreadPoolExecutor(max_workers=3) as executor:
         results = executor.map(fetch_url, urls)
 ```
@@ -159,9 +182,7 @@ async def handle_upload(image):
         result = await loop.run_in_executor(pool, resize_image, image)
 ```
 
----
-
-**本章小结**
+## 本章小结
 
 1.  **成本意识**：Python 的抽象是有代价的。在热点代码中，扁平优于嵌套。
 2.  **GIL 真相**：它只杀 CPU 任务，不杀 IO 任务。
@@ -173,3 +194,9 @@ async def handle_upload(image):
 理解了这些，你就明白了为什么 FastAPI 那么快（基于 AsyncIO），也明白了为什么做 AI 训练时我们要用 PyTorch/NumPy（底层 C++ 释放了 GIL，或者是多进程数据加载）。
 
 下一章，我们将深入 **AsyncIO** 的细节，掌握协程、任务组（TaskGroup）以及如何避免阻塞循环的实战技巧。
+
+::: tip 🧠 课后思考
+在 Node.js 中，`JSON.parse(hugeString)` 是一个可能会卡死 Event Loop 的同步操作。
+在 Python AsyncIO 中，如果你收到一个巨大的 JSON 字符串并调用 `json.loads(huge_str)`，会发生什么？
+你会怎么解决这个问题？（提示：回顾一下本章的混合架构）。
+:::

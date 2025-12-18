@@ -15,7 +15,7 @@ export default defineConfig({
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
-      { text: "开始阅读", link: "/intro" },
+      { text: "开始阅读", link: "/preface/intro" },
       { text: "章节目录", link: "/ch01-env" },
       // 如果你有 GitHub 仓库，可以在这里加链接
       { text: "GitHub", link: "https://github.com/bosens-China/python-beauty" },
@@ -27,7 +27,10 @@ export default defineConfig({
     sidebar: [
       {
         text: "序言",
-        items: [{ text: "写在前面", link: "/intro" }],
+        items: [
+          { text: "写在前面", link: "/preface/intro" },
+          { text: "致 TS 开发者的一封信", link: "/preface/salute-typescript" },
+        ],
       },
       {
         text: "第一部分：初见之美 —— 类型的基石",

@@ -1,9 +1,26 @@
 # 第 14 章：上下文管理器 —— 资源管理的艺术
 
-> **"All's well that ends well."** > **“结局好，一切都好。”**
+> **"All's well that ends well."**
+>
+> **“结局好，一切都好。”**
+>
 > — _威廉·莎士比亚，《终成眷属》 (William Shakespeare, All's Well That Ends Well)_
 
 ---
+
+::: tip 💡 上一章答案揭晓
+装饰器叠加的顺序：
+
+```python
+@dec1
+@dec2
+def foo(): ...
+```
+
+1.  **包裹顺序（定义时）**：由内向外。等价于 `foo = dec1(dec2(foo))`。所以 `dec2` 先接触到原函数，`dec1` 再包裹 `dec2` 返回的 wrapper。
+2.  **执行顺序（运行时）**：由外向内。当你调用 `foo()` 时，先执行 `dec1` 的 wrapper，它调用 `dec2` 的 wrapper，最后才调用原始的 `foo`。
+    **口诀**：穿衣由内而外，脱衣由外而内。
+    :::
 
 编程不仅仅是创建对象和调用函数，还涉及到**资源的管理**。打开的文件需要关闭，建立的网络连接需要断开，获取的线程锁需要释放。
 
@@ -13,9 +30,9 @@
 
 让我们看一个经典的读取文件的例子。
 
-**不推荐的写法 (类 C/JS 风格)**:
+::: code-group
 
-```python
+```python [❌ 不推荐写法 (类 C/JS 风格)]
 f = open("data.txt", "r")
 try:
     content = f.read()
@@ -25,14 +42,14 @@ finally:
     f.close() # 必须手动关闭，否则句柄泄漏
 ```
 
-**Pythonic 写法**:
-
-```python
+```python [✅ Pythonic 写法]
 # 当代码离开缩进块时，f.close() 会被自动调用
 with open("data.txt", "r") as f:
     content = f.read()
     # 即使这里抛出异常，文件也会安全关闭
 ```
+
+:::
 
 `with` 语句创建了一个**运行时上下文**。它保证了在进入代码块前做一些准备工作（Enter），并在离开代码块后做一些清理工作（Exit）。
 
@@ -90,21 +107,21 @@ except ValueError:
 # Caught exception outside.
 ```
 
-### 📝 TS 开发者便签：`using` 关键字 (TS 5.2+)
+::: info 📝 TS 开发者便签：`using` 关键字 (TS 5.2+)
+这是一个极其现代的对比。
 
-> 这是一个极其现代的对比。
->
-> - **Classic TS**: 你必须用 `try { ... } finally { resource.dispose() }`。
-> - **Modern TS (5.2+)**: 引入了 **`using`** 关键字，配合 `Symbol.dispose`。
->   ```typescript
->   // TypeScript 5.2+
->   {
->     using resource = new DatabaseTransaction();
->     resource.doWork();
->   } // 离开作用域时自动调用 resource[Symbol.dispose]()
->   ```
->
-> Python 的 `with` 语句完全等同于 TS 5.2 的 `using` 块作用域机制，但 Python 已经用了快 20 年了，生态支持极其完善。
+- **Classic TS**: 你必须用 `try { ... } finally { resource.dispose() }`。
+- **Modern TS (5.2+)**: 引入了 **`using`** 关键字，配合 `Symbol.dispose`。
+  ```typescript
+  // TypeScript 5.2+
+  {
+    using resource = new DatabaseTransaction();
+    resource.doWork();
+  } // 离开作用域时自动调用 resource[Symbol.dispose]()
+  ```
+
+Python 的 `with` 语句完全等同于 TS 5.2 的 `using` 块作用域机制，但 Python 已经用了快 20 年了，生态支持极其完善。
+:::
 
 ## 14.3 简化的写法：`@contextmanager`
 
@@ -209,6 +226,10 @@ def process_resource(cm: ContextManager[int]):
 
 在 Python 3.10+ 中，你可以用括号把多个管理器括起来，这避免了“阶梯式”缩进。
 
+::: tip ✨ Python 3.10 新特性
+在此之前，如果要开启多个文件，你不得不使用反斜杠 `\` 换行，非常丑陋。
+:::
+
 ```python
 # ✅ 现代写法
 with (
@@ -218,9 +239,7 @@ with (
     target.write(source.read())
 ```
 
----
-
-**本章小结**
+## 本章小结
 
 上下文管理器是 Python 代码健壮性的保障。它将“准备”和“清理”的逻辑封装在一起，让核心业务逻辑保持纯净。
 
@@ -237,7 +256,10 @@ with (
 
 下一章，我们将进入 **第 15 章：并发的抉择 —— 成本与模型**，在学习 async 语法之前，先理解 Python 的性能真相。
 
-> **思考题**：
-> 我们刚才学习了 `with`。
-> 如果我在 `with` 块中使用 `async/await` 调用异步函数，普通的上下文管理器还能工作吗？
-> 还是说我们需要一种特殊的 `async with`？它背后的魔术方法又是什么？（提示：加上 `a` 前缀）。
+::: tip 🧠 课后思考
+我们刚才学习了 `with`。
+
+如果我在 `with` 块中使用 `async/await` 调用异步函数，普通的上下文管理器还能工作吗？
+还是说我们需要一种特殊的 **`async with`**？它背后的魔术方法又是什么？
+（提示：加上 `a` 前缀）。
+:::

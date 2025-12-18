@@ -1,6 +1,9 @@
 # 第 4 章：Pythonic 之道 —— 推导式与正则
 
-> **"Brevity is the soul of wit."** > **“简洁是智慧的灵魂。”**
+> **"Brevity is the soul of wit."**
+>
+> **“简洁是智慧的灵魂。”**
+>
 > — _威廉·莎士比亚，《哈姆雷特》 (William Shakespeare, Hamlet)_
 
 ---
@@ -15,39 +18,47 @@
 
 ### 4.1.1 列表推导式 (List Comprehension)
 
-**传统写法 (C/JS 风格)**:
+让我们来看看两种写法的对比：
 
-```python
+::: code-group
+
+```python [传统写法 (C/JS 风格)]
 numbers = [1, 2, 3, 4, 5]
 squared = []
+
 for n in numbers:
     if n % 2 == 0:
         squared.append(n * n)
+
+# 结果: [4, 16]
 ```
 
-**Pythonic 写法**:
+```python [Pythonic 写法]
+numbers = [1, 2, 3, 4, 5]
 
-```python
 # [表达式 for 变量 in 容器 if 条件]
+# 读作："对于 numbers 中的每个 n，如果 n 是偶数，就计算 n*n 放入列表"
 squared: list[int] = [n * n for n in numbers if n % 2 == 0]
 ```
 
-这不仅仅是语法糖，它在解释器层面进行了优化（字节码指令更少），通常比等价的 `for` 循环快。
+:::
 
-### 📝 TS 开发者便签：Map & Filter
+这不仅仅是语法糖，它在解释器层面进行了优化（生成的字节码指令更少），通常比等价的 `for` 循环**更快**。
 
-> 列表推导式本质上就是 TS 中的 `.map().filter()` 链式调用的结合体。
->
-> - **TS**:
->   ```typescript
->   const squared = numbers.filter((n) => n % 2 === 0).map((n) => n * n);
->   ```
-> - **Python**:
->   ```python
->   squared = [n * n for n in numbers if n % 2 == 0]
->   ```
->
-> **文化差异**：虽然 Python 也有 `map()` 和 `filter()` 函数，但在 Python 社区中，**推导式**是首选。除非你需要懒加载（使用生成器），否则尽量少写 `map(lambda x: ..., data)`，因为它可读性较差。
+::: info 📝 TS 开发者便签：Map & Filter
+列表推导式本质上就是 TS 中的 `.map().filter()` 链式调用的结合体。
+
+- **TS**:
+  ```typescript
+  const squared = numbers.filter((n) => n % 2 === 0).map((n) => n * n);
+  ```
+- **Python**:
+  ```python
+  squared = [n * n for n in numbers if n % 2 == 0]
+  ```
+
+**文化差异**：虽然 Python 也有 `map()` 和 `filter()` 函数，但在 Python 社区中，**推导式**是绝对的首选。除非你需要懒加载（使用生成器），否则尽量少写 `map(lambda x: ..., data)`，因为推导式通常可读性更强。
+:::
 
 ### 4.1.2 字典与集合推导式
 
@@ -57,12 +68,12 @@ squared: list[int] = [n * n for n in numbers if n % 2 == 0]
 users = [("Alice", 101), ("Bob", 102), ("Charlie", 103)]
 
 # 字典推导式：快速构建 lookup table
-# {key_expr: value_expr for ...}
+# 语法：{key_expr: value_expr for ...}
 user_map: dict[str, int] = {name: uid for name, uid in users}
 # 结果: {'Alice': 101, 'Bob': 102, ...}
 
 # 集合推导式：快速去重并处理
-# {value_expr for ...}
+# 语法：{value_expr for ...}
 raw_tags = [" python ", "Code", "PYTHON", " code "]
 unique_tags: set[str] = {t.strip().lower() for t in raw_tags}
 # 结果: {'python', 'code'}
@@ -83,16 +94,17 @@ from collections.abc import Iterator
 large_stream: Iterator[int] = (x * x for x in range(1_000_000))
 
 # 配合 sum, any, all 等函数使用非常优雅
-# 注意：当它是函数唯一参数时，可以省略一层括号
+# 注意：当它是函数唯一参数时，可以省略一层括号，这非常 Pythonic
 total = sum(x * x for x in range(100))
 ```
 
-### 📝 TS 开发者便签：Lazy Evaluation
+::: info 📝 TS 开发者便签：Lazy Evaluation
 
-> - **List Comp `[]`**: 类似 TS 的 `Array.map`，立即生成数组。
-> - **Gen Exp `()`**: 类似 TS 的 Generator 函数或 Iterator。它只在你调用 `next()` 或遍历时才计算下一个值。
->
-> **最佳实践**：如果列表很大，且你只需要遍历一次，永远优先使用生成器表达式。
+- **List Comp `[]`**: 类似 TS 的 `Array.map`，立即生成数组。
+- **Gen Exp `()`**: 类似 TS 的 Generator 函数或 Iterator。它只在你调用 `next()` 或遍历时才计算下一个值。
+
+**最佳实践**：如果列表很大，或者你只需要遍历一次，**永远优先使用生成器表达式**。
+:::
 
 ## 4.3 正则表达式 (Regex) 与类型注解
 
@@ -132,21 +144,18 @@ def parse_email(text: str) -> dict[str, str] | None:
     if not match:
         return None
 
-    # groupdict 直接把命名分组转为字典
+    # groupdict 直接把命名分组转为字典，极其方便
     return match.groupdict()
 
 # 测试
 print(parse_email("Contact: alice.dev@google.com"))
-# {'user': 'alice.dev', 'domain': 'google.com'}
+# 输出: {'user': 'alice.dev', 'domain': 'google.com'}
 ```
 
-### 📝 TS 开发者便签：Regex 写法
-
-> - **TS**: `/pattern/g` 字面量。JS 引擎会自动缓存字面量正则。
-> - **Python**: 没有 `/.../` 语法。必须使用 `re` 模块。
-> - **Pattern vs Match**:
->   - `re.Pattern`: 编译后的正则表达式对象。
->   - `re.Match`: 匹配成功后返回的结果对象（包含捕获组等信息）。
+::: tip 🔍 Regex 差异点
+TS/JS 有字面量正则 `/pattern/g`，引擎会自动缓存。
+Python 没有 `/.../` 语法，必须引入 `re` 模块。使用 `re.compile()` 是最佳实践，它对应了 JS 引擎的自动缓存机制，避免了在循环中重复解析正则字符串。
+:::
 
 ## 4.4 Python 之禅 (The Zen of Python)
 
@@ -163,29 +172,27 @@ print(parse_email("Contact: alice.dev@google.com"))
 
 ### 实战：海象运算符 (Walrus Operator `:=`)
 
-Python 3.8 引入的 `:=` 是对“扁平化”的一种实践。它允许你在表达式内部赋值。
+Python 3.8 引入的 `:=` 是对“扁平化”的一种实践。因为 `:=` 看起来像海象的眼睛和长牙，所以得名“海象运算符”。它允许你在**表达式内部赋值**。
 
-**Old (Nested)**:
+::: code-group
 
-```python
+```python [Old (Nested)]
 match = pattern.search(text)
 if match:
     process(match)
 ```
 
-**New (Pythonic)**:
-
-```python
-# 在 if 条件判断的同时进行赋值
+```python [New (Pythonic)]
+# 在 if 条件判断的同时，将结果赋值给 match 变量
 if match := pattern.search(text):
     process(match)
 ```
 
+:::
+
 这减少了临时变量的作用域泄露，使代码逻辑更紧凑。
 
----
-
-**本章小结**
+## 本章小结
 
 这一章我们学习了 Python 的“内功心法”。
 
@@ -198,6 +205,10 @@ if match := pattern.search(text):
 
 下一章，我们将进入 **逻辑之美**。我们将介绍 Python 3.10 引入的结构化模式匹配 (`match case`)，以及如何利用类型系统做“类型收窄”。这可是 TS 开发者最喜欢的功能之一。
 
-> **思考题**：
-> 列表推导式虽然好，但如果逻辑太复杂（比如包含双重循环和多个 `if`），写在一行里会变成“天书”。
-> Python 社区对于推导式的可读性有一个不成文的约定：如果一个推导式超过了 **两行** 或者逻辑过于嵌套，应该怎么做？（答案是：放弃推导式，老老实实写 `for` 循环。可读性 > 炫技。）
+::: warning 🧠 课后思考
+列表推导式虽然好，但如果逻辑太复杂（比如包含双重循环和多个 `if`），写在一行里会变成“天书”。
+
+Python 社区对于推导式的可读性有一个不成文的约定：**如果一个推导式超过了 **\_** 或者逻辑过于嵌套，应该怎么做？**
+
+（答案是：放弃推导式，老老实实写 `for` 循环。可读性 > 炫技。）
+:::

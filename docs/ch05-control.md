@@ -1,17 +1,29 @@
 # 第 5 章：控制流与类型收窄 (Type Narrowing)
 
-> **"When you have eliminated the impossible, whatever remains, however improbable, must be the truth."** > **“当你排除了所有不可能，剩下的无论多么难以置信，那一定就是真相。”**
+> **"When you have eliminated the impossible, whatever remains, however improbable, must be the truth."**
+>
+> **“当你排除了所有不可能，剩下的无论多么难以置信，那一定就是真相。”**
+>
 > — _阿瑟·柯南·道尔，《福尔摩斯探案集》 (Arthur Conan Doyle, Sherlock Holmes)_
 
 ---
 
-编程的核心在于决策。Python 以其强制缩进（Indentation）闻名，这迫使代码在视觉上与其逻辑结构保持一致。但在现代 Python 中，控制流不仅仅是运行时的跳转，更是**编译期类型推断的锚点**。
+::: tip 💡 上一章答案揭晓
+在第四章结尾我们提到，如果推导式超过 **两行** 或者包含复杂的嵌套逻辑，应该怎么办？
+**答案**：放弃推导式，老老实实写普通的 `for` 循环。
+代码的可读性永远高于炫技。当一行代码需要读者停下来思考 5 秒钟才能看懂时，它就不是 Pythonic 的了。
+:::
+
+编程的核心在于决策。Python 以其强制缩进（Indentation）闻名。这不仅仅是格式要求，缩进在 Python 中起到了 C/Java/JS 中 **花括号 `{}`** 的作用。它迫使代码在视觉上与其逻辑结构保持一致。
+
+在现代 Python 中，控制流不仅仅是运行时的跳转，更是**编译期类型推断的锚点**。
 
 ## 5.1 真值测试 (Truthiness)：Python 的“假”
 
-首先，我们需要统一对“真”和“假”的认知。
-在 TypeScript/JS 中，空数组 `[]` 和空对象 `{}` 是 `true`。
-**在 Python 中，它们是 `False`。**
+首先，我们需要统一对“真”和“假”的认知。这是 TS/JS 开发者最容易翻车的地方。
+
+在 TypeScript/JS 中，空数组 `[]` 和空对象 `{}` 被视为 `true`。
+**但在 Python 中，它们是 `False`。**
 
 Python 的 Falsy（假值）列表：
 
@@ -22,7 +34,7 @@ Python 的 Falsy（假值）列表：
 
 ```python
 def process_items(items: list[str]) -> None:
-    # Pythonic 写法：利用真值测试
+    # Pythonic 写法：直接利用真值测试
     # 不需要写 if len(items) > 0:
     if items:
         print(f"Processing {len(items)} items...")
@@ -30,11 +42,16 @@ def process_items(items: list[str]) -> None:
         print("No items to process.")
 ```
 
-> **警示**：这一点非常重要。如果你在 Python 里写 `if list_obj:`，它是在检查列表是否非空，而不是检查对象是否存在。
+::: danger 🛑 严重警示：空数组陷阱
+如果你写 `if list_obj:`，Python 是在检查**列表是否非空**。
+如果你写 `if list_obj is not None:`，Python 是在检查**对象是否存在**。
+
+这两者在逻辑上是完全不同的。如果你的变量既可能是 `None` 又可能是 `[]`，请务必小心处理。
+:::
 
 ## 5.2 类型收窄 (Type Narrowing)
 
-类型收窄是指类型检查器（如 pyright）根据控制流语句，推断出变量更精确类型的过程。
+类型收窄是指类型检查器（如 pyright/Pylance）根据控制流语句，自动推断出变量在特定代码块中具备更精确类型的过程。
 
 ### 5.2.1 `isinstance` —— 天然的 Type Guard
 
@@ -73,7 +90,10 @@ def get_name_length(name: str | None) -> int:
     return len(name)
 ```
 
-> **注意**：永远使用 `is None` 或 `is not None` 来判断空值，而不是 `== None`。因为 `is` 比较的是内存地址（身份），速度更快且更安全。
+::: info 🧠 最佳实践
+永远使用 `is None` 或 `is not None` 来判断空值，而不是 `== None`。
+因为 `is` 比较的是内存地址（身份），速度更快，且不会被对象的自定义 `__eq__` 方法干扰。
+:::
 
 ## 5.3 结构化模式匹配 (`match case`)
 
@@ -91,7 +111,7 @@ match status:
     case 404 | 500: # 支持用 | 匹配多个值
         print("Error")
     case _:
-        print("Unknown") # _ 相当于 default
+        print("Unknown") # _ 相当于 default，也是通配符
 ```
 
 ### 5.3.2 结构匹配（解构）
@@ -100,9 +120,9 @@ match status:
 
 假设我们从 API 收到一个数据，它可能是以下几种格式：
 
-1. 错误：`["error", "message"]`
-2. 成功：`["success", [data1, data2]]`
-3. 登录：`["auth", token, user_id]`
+1.  错误：`["error", "message"]`
+2.  成功：`["success", [data1, data2]]`
+3.  登录：`["auth", token, user_id]`
 
 ```python
 # data 类型实际上是 list[Any]
@@ -113,6 +133,7 @@ def handle_response(data: list) -> None:
             print(f"Error occurred: {msg}")
 
         # 匹配列表，第一个是 "success"，第二个是列表（绑定到 payload）
+        # *payload 是解包语法，表示"列表里剩下的所有元素"
         case ["success", [*payload]]:
             print(f"Got {len(payload)} items")
 
@@ -135,7 +156,7 @@ handle_response(["error", "Connection failed"])
 ```python
 def process_input(val: int | str | list[str]) -> None:
     match val:
-        # 匹配 int 类型，且大于 10
+        # 匹配 int 类型，且把值绑定给 x，同时要求 x > 10
         case int(x) if x > 10:
             print(f"Large number: {x}")
 
@@ -151,46 +172,51 @@ def process_input(val: int | str | list[str]) -> None:
             print("It is a list")
 ```
 
-### 📝 TS 开发者便签：Switch vs Match
+::: info 📝 TS 开发者便签：Switch vs Match
 
-> - **TS Switch**: 主要用于匹配字面量。虽然 TS 的 Discriminated Unions (带 `kind` 字段的 interface) 配合 switch 可以实现类型收窄，但语法比较冗长，且不能解构。
-> - **Python Match**: 更像 Rust/Scala 的 `match`。它可以深入对象内部进行解构（Destructuring）。
-> - **Fall-through**: Python 的 `match` **没有**穿透机制（Fall-through）。匹配到一个 case 后，执行完自动结束，不需要写 `break`。
+- **TS Switch**: 主要用于匹配字面量。
+- **Python Match**: 更像 Rust/Scala 的 `match`。它可以深入对象内部进行**解构（Destructuring）**。
+- **Fall-through**: Python 的 `match` **没有**穿透机制（Fall-through）。匹配到一个 case 后，执行完自动结束，**不需要**写 `break`。
+  :::
 
 ## 5.4 EAFP：Python 的异常处理哲学
 
 在控制流中，Python 社区奉行一种独特的哲学：**EAFP** (Easier to Ask for Forgiveness than Permission)。
-意思是：先试着做，出错了再捕获；而不是先检查各种条件再做。
+意思是：**先试着做，出错了再捕获；而不是先检查各种条件再做。**
 
-**LBYL (Look Before You Leap) - 典型的 C/JS 思维**:
+让我们对比一下两种风格：
 
-```python
-# 不推荐：即使 key 存在，多线程环境下也可能在下一行消失
+::: code-group
+
+```python [LBYL (C/JS 风格)]
+# Look Before You Leap (三思而后行)
+# 不推荐：代码冗长，且存在"竞态条件"（检查完的一瞬间，key 可能被删了）
+
 if "key" in my_dict:
     value = my_dict["key"]
 else:
     handle_error()
 ```
 
-**EAFP - Pythonic 思维**:
+```python [EAFP (Pythonic 风格)]
+# Easier to Ask for Forgiveness than Permission (先斩后奏)
+# 推荐：原子性更强，且通常更快（因为快乐路径不需要做 if 判断）
 
-```python
-# 推荐：原子性更强，且通常更快（如果异常很少发生）
 try:
     value = my_dict["key"]
 except KeyError:
     handle_error()
 ```
 
-在 Python 中，抛出和捕获异常的开销比 Java 小得多，因此异常处理被视为正常的控制流的一部分。
+:::
 
----
+在 Python 中，抛出和捕获异常的开销比 Java 小得多，因此异常处理被视为正常的控制流的一部分，而不是“发生了可怕的错误”。
 
-**本章小结**
+## 本章小结
 
 我们掌握了 Python 逻辑控制的三板斧：
 
-1.  **Truthiness**: 理解空容器即 `False`。
+1.  **Truthiness**: 牢记空容器即 `False`，这是与 JS 最大的直觉差异。
 2.  **Type Narrowing**: 利用 `isinstance` 让编辑器理解你的逻辑，消除联合类型的歧义。
 3.  **Match Case**: 使用结构化模式匹配处理复杂数据，替代冗长的 `if-elif`。
 
@@ -198,6 +224,10 @@ except KeyError:
 
 在下一章，我们将深入 **函数 (Functions)**。你会看到，Python 的函数参数机制（`*args`, `**kwargs`, `/`, `*`）比 TS 复杂得多，但也强大得多。那是阅读开源源码的必修课。
 
-> **思考题**：
-> `match case` 不仅能匹配列表，还能匹配对象（Class）。
-> 如果我有一个 `User(name, age)` 类，我该如何写 `case User(name="Alice", age=age):` 来匹配名为 Alice 的用户并提取她的年龄？这需要类支持 `__match_args__` 吗？
+::: warning 🧠 课后思考
+`match case` 不仅能匹配列表，还能匹配对象（Class）。
+
+如果我有一个 `User(name, age)` 类，我该如何写 `case` 语句来匹配名为 "Alice" 的用户，并直接提取她的 `age`？
+
+**提示**：如果你定义的类是普通的 `class User:`，你需要手动定义 `__match_args__` 属性。但如果你使用 Python 3.7+ 的 `dataclass`，这一切都是自动的。我们将在面向对象章节详细揭晓。
+:::

@@ -1,9 +1,18 @@
 # 第 12 章：防御性编程与类型安全 (Robustness)
 
-> **"The best safety lies in fear."** > **“最大的安全在于时刻心存忧患。”**
+> **"The best safety lies in fear."**
+>
+> **“最大的安全在于时刻心存忧患。”**
+>
 > — _威廉·莎士比亚，《哈姆雷特》 (William Shakespeare, Hamlet)_
 
 ---
+
+::: tip 💡 上一章答案揭晓
+如何编写一个装饰器，既能包裹任意函数，又不丢失原函数的参数类型提示？
+你需要使用 `ParamSpec`（参数规范）。它可以“捕获”一个函数的参数列表，并在另一个地方（比如装饰器返回的 wrapper 函数）“重放”它。
+我们将在下一章详细讲解这个黑魔法。
+:::
 
 写类型注解不仅仅是为了让 IDE 补全，更是为了在**编译期（静态分析期）** 捕获逻辑漏洞。
 
@@ -39,12 +48,16 @@ def process_items(items: list[Any]):
         print("Not a string list")
 ```
 
-### 📝 TS 开发者便签：`val is Type`
+::: warning ⚠️ 能力越大，责任越大
+**警示**：就像 TS 一样，`TypeGuard` 是**开发者对编译器的承诺**。
+如果你在 `is_str_list` 里写了错误的逻辑（比如返回了 `True` 但列表里混进了整数），静态检查器依然会无条件相信你。这会导致运行时崩溃。请务必小心编写 Guard 函数。
+:::
 
-> - **TS**: `function isStrList(val: any): val is string[] { ... }`
-> - **Python**: `def is_str_list(val: Any) -> TypeGuard[list[str]]: ...`
->
-> **警示**：就像 TS 一样，`TypeGuard` 是**开发者对编译器的承诺**。如果你的运行时逻辑写错了（比如函数返回 `True` 但列表里混进了整数），静态检查器依然会相信你，这会导致运行时崩溃。**能力越大，责任越大。**
+::: info 📝 TS 开发者便签：`val is Type`
+
+- **TS**: `function isStrList(val: any): val is string[] { ... }`
+- **Python**: `def is_str_list(val: Any) -> TypeGuard[list[str]]: ...`
+  :::
 
 ## 12.2 穷尽性检查：`assert_never`
 
@@ -64,6 +77,7 @@ def move(dir: Direction):
             print("Going right")
         case "up":
             print("Going up")
+
         # 假设我们忘记写 "down" 了...
 
         case _ as unreachable:
@@ -74,19 +88,19 @@ def move(dir: Direction):
 
 `assert_never` 的作用是告诉类型检查器：“这行代码永远不应该被执行”。如果有漏网之鱼（比如 `"down"`）流到了这里，它的类型就不是 `Never`，从而触发静态错误。
 
-### 📝 TS 开发者便签：The `never` type
+::: info 📝 TS 开发者便签：The `never` type
+这完全等同于 TS 中的 Exhaustiveness Checking 模式：
 
-> 这完全等同于 TS 中的 Exhaustiveness Checking 模式：
->
-> ```typescript
-> switch (dir) {
->   // ... cases ...
->   default:
->     const _exhaustiveCheck: never = dir; // Error if 'down' is missing
-> }
-> ```
->
-> Python 3.11+ 的 `assert_never` 让这一模式变得标准化了。
+```typescript
+switch (dir) {
+  // ... cases ...
+  default:
+    const _exhaustiveCheck: never = dir; // Error if 'down' is missing
+}
+```
+
+Python 3.11+ 的 `assert_never` 让这一模式变得标准化了。
+:::
 
 ## 12.3 错误处理哲学：异常 vs Result 模式
 
@@ -161,7 +175,7 @@ def process(u: User):
 
 1.  **构造即完备**：对象在 `__init__` 后必须是完整可用的。
 2.  **边界隔离**：如果数据可能缺失（比如 DB 查询结果），在 Controller 层处理完 `None`，传给 Service/Domain 层的数据应当是确定的（Non-Optional）。
-3.  **使用哨兵 (Sentinel)**：有时候 `None` 是有效值，你需要区分“未传参”和“传了 None”。
+3.  **使用哨兵 (Sentinel)**：有时候 `None` 是有效值（比如“用户想把头像置空”），你需要区分“未传参”和“传了 None”。
 
 ```python
 # 创建一个唯一的对象作为哨兵
@@ -176,9 +190,7 @@ def update(val: Any = MISSING):
         print(f"Value is {val}")
 ```
 
----
-
-**本章小结**
+## 本章小结
 
 防御性编程不仅仅是写 `try...except`，而是利用类型系统构建“编译期防火墙”。
 
@@ -191,6 +203,11 @@ def update(val: Any = MISSING):
 
 接下来，我们将回到 Python 的元编程领域，探讨**装饰器**。但这次，我们将应用本章学到的防御性思维，学习如何编写**不丢失类型信息**的装饰器。这是许多 Python 高级库（如 FastAPI, Celery）的底层秘密。
 
-> **思考题**：
-> 如果我有 `def fetch() -> list[User] | None`，每次调用都要检查 `if result is not None` 很麻烦。
-> 在 TS 中你可以写一个 `assert(result)` 函数断言它不为空。在 Python 中，你能用 `TypeGuard` 写一个类似的 `assert_not_none(val)` 吗？它能改变调用方变量的类型吗？
+::: tip 🧠 课后思考
+在 TS 中，我们可以写断言函数 `asserts val is string`，这样调用后，**当前作用域后续的**变量类型都会改变。
+
+在 Python 中，`TypeGuard` 能做到这一点吗？
+如果我写了一个 `def check_not_none(val) -> TypeGuard[...]:`，然后直接调用 `check_not_none(x)`（不放在 `if` 里），IDE 会把后续的 `x` 视为非空吗？
+
+（提示：目前 Python 还不支持 `asserts` 语法的类型推断，TypeGuard 必须配合 `if` 使用。）
+:::

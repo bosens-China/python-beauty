@@ -9,7 +9,7 @@ hero:
   actions:
     - theme: brand
       text: 开始阅读
-      link: /intro
+      link: /preface/intro
     - theme: alt
       text: 查看目录
       link: /ch01-env

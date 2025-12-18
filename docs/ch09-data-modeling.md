@@ -1,9 +1,19 @@
 # 第 9 章：数据建模与 IO 边界 (Data Modeling)
 
-> **"Truth is beauty, beauty truth."** > **“真即是美，美即是真。”**
+> **"Truth is beauty, beauty truth."**
+>
+> **“真即是美，美即是真。”**
+>
 > — _约翰·济慈 (John Keats)_
 
 ---
+
+::: tip 💡 上一章答案揭晓
+关于多重继承 `class C(A, B)`，如果 A 和 B 都有 `greet()`，C 会调用谁的？
+**答案：调用 A 的。**
+Python 使用 **C3 线性化算法** 来确定方法解析顺序 (MRO)。简单来说，原则是 **“从左到右，深度优先”**。
+你可以通过 `print(C.mro())` 来查看具体的查找顺序：`[C, A, B, object]`。
+:::
 
 软件开发中最大的挑战往往不在于核心逻辑，而在于**边界 (Boundaries)**。当数据从外部世界（HTTP 请求、数据库、文件）流入你的程序时，它们是“脏”的、无类型的。
 
@@ -24,9 +34,9 @@ def get_user(uid: int) -> User:
     resp = requests.get(f"/users/{uid}")
     data = resp.json() # 返回的是 dict (字典)
 
-    # ❌ 危险的操作：类型强转
+    # ❌ 危险的操作：类型强转 (Type Casting)
     # 在 TS 中，你可能会写：return data as User
-    # 在 Python 中，这行代码虽然静态检查可能通过（取决于写法），
+    # 在 Python 中，这行代码虽然静态检查可能通过（因为我们撒谎了），
     # 但运行时 data 依然是 dict，根本不是 User 类的实例！
     return data # type: ignore
 ```
@@ -66,36 +76,54 @@ process_user(data) # ✅
 
 **局限性**：`TypedDict` 仅仅是给静态检查工具看的。在运行时，它就是一个普通的 `dict`，没有任何验证逻辑。如果传入的数据缺了 `id`，运行时照样报错。
 
-### 📝 TS 开发者便签：Interface vs TypedDict
+::: info 📝 TS 开发者便签：Interface vs TypedDict
 
-> - **TS Interface**: `interface User { id: number }`。
-> - **Python TypedDict**: `class User(TypedDict): id: int`。
->
-> 它们非常相似：都只存在于编译/检查阶段，运行时都只是普通的 JSON 对象/字典。它是处理纯 JSON 数据最轻量的方式。
+- **TS Interface**: `interface User { id: number }`。
+- **Python TypedDict**: `class User(TypedDict): id: int`。
+
+它们非常相似：都只存在于编译/检查阶段，运行时都只是普通的 JSON 对象/字典。它是处理纯 JSON 数据最轻量的方式。
+:::
 
 ## 9.3 `Dataclasses`：名义化对象
 
 当你需要给数据绑定行为（方法），或者需要更严格的结构时，你应该使用 **Dataclasses**。它是 Python 3.7+ 的标准库，用于替代手写繁琐的 `class`。
 
-### 9.3.1 基础语法
+### 9.3.1 基础语法与陷阱
 
-```python
+Dataclass 会自动为你生成 `__init__`, `__repr__`, `__eq__` 等方法。但这里有一个巨大的陷阱。
+
+::: code-group
+
+```python [❌ 错误示范]
+from dataclasses import dataclass
+
+@dataclass
+class User:
+    id: int
+    name: str
+    # ❌ ValueError: mutable default <class 'list'>...
+    # Python 禁止直接使用可变对象作为默认值
+    tags: list[str] = []
+```
+
+```python [✅ 正确示范]
 from dataclasses import dataclass, field
 
 @dataclass
 class User:
     id: int
     name: str
-    # 默认值
+    # 默认值 (不可变对象直接写)
     is_active: bool = True
-    # ⚠️ 陷阱：可变默认值必须用 field(default_factory=...)
+    # ✅ 可变默认值必须用 field(default_factory=...)
+    # 这类似 JS 中每次调用构造函数都 new Array()
     tags: list[str] = field(default_factory=list)
 
 u = User(id=1, name="Alice")
 print(u) # User(id=1, name='Alice', is_active=True, tags=[])
 ```
 
-Python 自动为你生成了 `__init__`, `__repr__`, `__eq__` 等方法。
+:::
 
 ### 9.3.2 不可变性：`frozen=True`
 
@@ -120,7 +148,8 @@ class Point:
     y: int
 ```
 
-默认的 Python 对象使用 `__dict__` 字典来存储属性，这很灵活但费内存。`slots=True` 会告诉解释器预留固定的内存空间，**大幅降低内存占用并提升访问速度**。对于创建数百万个小对象的场景，这是必选项。
+默认的 Python 对象使用 `__dict__` 字典来存储属性，这很灵活（你可以随时 `obj.new_attr = 1`）但费内存。
+`slots=True` 就像是把“宽敞的背包”换成了“紧凑的卡槽”，它告诉解释器预留固定的内存空间，**大幅降低内存占用并提升访问速度**。对于创建数百万个小对象的场景，这是必选项。
 
 ## 9.4 脏数据防御：为什么 Dataclass 还是不够？
 
@@ -130,10 +159,12 @@ class Point:
 
 ```json
 {
-  "id": "123", // 注意：这是字符串！
+  "id": "123",
   "name": "Alice"
 }
 ```
+
+_注意：`id` 是字符串 "123"，但我们的 Dataclass 定义要求是 `int`。_
 
 如果我们尝试用它初始化 Dataclass：
 
@@ -153,20 +184,21 @@ print(user.id)        # 输出 "123" (字符串)
 print(type(user.id))  # <class 'str'>
 ```
 
-**发生了什么？**
+::: danger ☠️ 发生了什么？
 Dataclass 生成的 `__init__` 方法**只是简单的赋值**，它**不会**检查你传进来的值是否符合类型注解，也**不会**帮你自动转换（比如把 `"123"` 转成 `123`）。
 
 这就导致了“脏数据”污染了你的内部对象。后续的代码如果假设 `user.id` 是 `int` 并进行数学运算，就会在远离数据源的地方突然崩溃。
+:::
 
-### 📝 TS 开发者便签：运行时校验的缺失
+::: info 📝 TS 开发者便签：运行时校验的缺失
+在 TS 中，`const u = json as User` 也是一种谎言。但通常我们在 TS 中使用 Zod / io-ts 来在边界处清洗数据。
 
-> 在 TS 中，`const u = json as User` 也是一种谎言。但通常我们在 TS 中使用 Zod / io-ts 来在边界处清洗数据。
->
-> 在 Python 中：
->
-> - **TypedDict**: 纯静态，不管运行时。
-> - **Dataclass**: 运行时只赋值，不校验，不转换。适合**内部**数据传递（你信任数据的来源）。
-> - **Pydantic** (第 17 章): **运行时** 校验 + 转换。适合**外部**数据输入（API, DB）。
+在 Python 中：
+
+- **TypedDict**: 纯静态，不管运行时。
+- **Dataclass**: 运行时只赋值，不校验，不转换。适合**内部**数据传递（你信任数据的来源）。
+- **Pydantic** (第 17 章): **运行时** 校验 + 转换。适合**外部**数据输入（API, DB）。
+  :::
 
 ## 9.5 转换层：如何安全地从 Dict 变为 Object
 
@@ -201,9 +233,7 @@ user = User.from_dict({"id": "123", "name": "Alice"})
 
 虽然写起来繁琐，但这才是负责任的工程代码。它划清了“脏数据”和“净数据”的界限。
 
----
-
-**本章小结**
+## 本章小结
 
 数据建模是 Python 工程化的深水区。
 
@@ -216,6 +246,10 @@ user = User.from_dict({"id": "123", "name": "Alice"})
 
 下一章，我们将深入 **协议 (Protocols)**，这是 Python 类型系统中处理“多态”的关键，也是连接静态类型与动态特性的桥梁。
 
-> **思考题**：
-> `Dataclass` 和 `TypedDict` 在 JSON 序列化时有什么区别？
-> 如果我直接用 `json.dumps(my_dataclass_instance)` 会发生什么？（提示：Python 的标准 `json` 库默认不认识 Dataclass，你需要 `dataclasses.asdict` 帮忙）。
+::: tip 🧠 课后思考
+**序列化陷阱**：
+`Dataclass` 和 `TypedDict` 在 JSON 序列化时有什么区别？
+
+如果我直接运行 `json.dumps(my_dataclass_instance)`，Python 会抛出 `TypeError: Object of type User is not JSON serializable`。
+为什么？（提示：标准库的 `json` 不知道如何处理自定义对象，你需要 `dataclasses.asdict` 帮忙转换回字典）。
+:::

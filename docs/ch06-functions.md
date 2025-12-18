@@ -1,6 +1,9 @@
 # 第 6 章：函数 —— 代码的契约
 
-> **"Suit the action to the word, the word to the action."** > **“举止要配合言语，言语要配合举止。”**
+> **"Suit the action to the word, the word to the action."**
+>
+> **“举止要配合言语，言语要配合举止。”**
+>
 > — _威廉·莎士比亚，《哈姆雷特》 (William Shakespeare, Hamlet)_
 
 ---
@@ -13,11 +16,11 @@
 
 让我们定义一个标准的现代 Python 函数。
 
-```python
+```python {3,5}
 def calculate_price(
     base: float,
     tax_rate: float = 0.1,
-    *,
+    *,  # 这是一个特殊的分隔符
     discount: float = 0.0
 ) -> float:
     """
@@ -31,7 +34,7 @@ def calculate_price(
 
 ### 6.1.1 仅限关键字参数 (Keyword-Only Arguments, `*`)
 
-在 `*` 之后的参数，**必须**使用 `key=value` 的形式调用。
+在 `*` 之后的参数，**必须**使用 `key=value` 的形式调用。这就像是一个“路障”，阻止了位置参数的通过。
 
 ```python
 # 定义：host 随便传，但 timeout 和 ssl 必须显式指定键名
@@ -61,19 +64,20 @@ length("hello")       # ✅
 # length(obj="hello") # ❌ TypeError
 ```
 
-### 📝 TS 开发者便签：Config Object vs Kwargs
+::: info 📝 TS 开发者便签：Config Object vs Kwargs
 
-> - **TypeScript 习惯**: 由于 JS 历史原因，当参数很多时，通常习惯定义一个“配置对象”：
->   ```typescript
->   function connect(config: { host: string; timeout?: number }) { ... }
->   connect({ host: "localhost", timeout: 10 });
->   ```
-> - **Python 习惯**: Python **原生支持**关键字传参，不需要把它包裹在字典里！
->   ```python
->   def connect(host: str, timeout: int = 10): ...
->   connect(host="localhost", timeout=10)
->   ```
->   这是 Python 代码整洁的关键。不要在 Python 里模仿 JS 传一个 `config` 字典，除非那个配置真的非常庞大。
+- **TypeScript 习惯**: 由于 JS 历史原因，当参数很多时，通常习惯定义一个“配置对象”：
+  ```typescript
+  function connect(config: { host: string; timeout?: number }) { ... }
+  connect({ host: "localhost", timeout: 10 });
+  ```
+- **Python 习惯**: Python **原生支持**关键字传参，不需要把它包裹在字典里！
+  `python
+def connect(host: str, timeout: int = 10): ...
+connect(host="localhost", timeout=10)
+`
+  这是 Python 代码整洁的关键。不要在 Python 里模仿 JS 传一个 `config` 字典，除非那个配置真的非常庞大。
+  :::
 
 ## 6.2 动态参数：`*args` 与 `**kwargs`
 
@@ -106,11 +110,12 @@ def build_tags(**kwargs: str) -> None:
 build_tags(id="btn-1", class_name="primary") # ✅
 ```
 
-### 📝 TS 开发者便签：Rest Parameters
+::: info 📝 TS 开发者便签：Rest Parameters
 
-> - **TS**: `function (...args: number[])`。注意 TS 使用数组类型 `number[]`。
-> - **Python**: `def (*args: int)`。注意 Python 注解的是内部元素的类型 `int`。
-> - **双星号**: TS 没有 `**kwargs` 的直接对应物（通常用剩下的对象属性模拟）。Python 的 `**kwargs` 是处理动态配置的神器，在 Django/Matplotlib 等库中随处可见。
+- **TS**: `function (...args: number[])`。注意 TS 使用数组类型 `number[]`。
+- **Python**: `def (*args: int)`。注意 Python 注解的是内部元素的类型 `int`。
+- **双星号**: TS 没有 `**kwargs` 的直接对应物。Python 的 `**kwargs` 是处理动态配置的神器，在 Django/Matplotlib 等库中随处可见。
+  :::
 
 ## 6.3 函数即对象：`Callable`
 
@@ -120,7 +125,7 @@ build_tags(id="btn-1", class_name="primary") # ✅
 from collections.abc import Callable
 
 # 定义一个类型别名：接收两个 int，返回 int 的函数
-# Callable[[Arg1Type, Arg2Type], ReturnType]
+# 格式：Callable[[Arg1Type, Arg2Type], ReturnType]
 type BinaryOp = Callable[[int, int], int]
 
 def apply_op(x: int, y: int, func: BinaryOp) -> int:
@@ -137,10 +142,11 @@ apply_op(5, 3, add) # 结果 8
 Python 也有匿名函数 `lambda`，但它比 TS 的箭头函数弱得多——**它只能包含一行表达式**，不能包含复杂的语句（如 `if` 块, `for` 循环等，虽然可以用三元运算符模拟）。
 
 ```python
+# ✅ 简短的逻辑适合 lambda
 users.sort(key=lambda u: u["age"])
-```
 
-> **建议**：除了在 `map`, `filter`, `sort` 等极其简短的场景下，尽量少用 lambda。定义一个具名函数 `def` 通常可读性更好，且能提供完整的类型注解。
+# ❌ 复杂的逻辑请务必使用 def 定义具名函数
+```
 
 ## 6.4 深度思考：类型是建议，不是法律
 
@@ -164,23 +170,23 @@ result = add_numbers("1", "2")
 print(result) # 输出 "12" (字符串拼接)
 ```
 
-如果你直接运行这段代码 (`python main.py`)，它**不会报错**。
+如果你直接运行这段代码 (`uv run main.py`)，它**不会报错**。
 
 ### 为什么会这样？
 
 Python 的解释器（Runtime）**完全忽略**类型注解。对解释器来说，`a: int` 和 `a` 没有任何区别。类型注解只是给**静态分析工具**（如 VS Code 的 Pylance，或命令行的 `mypy`/`pyright`）看的。
 
-### TS 开发者如何建立正确的心智模型？
+::: danger ⚠️ TS 开发者如何建立正确的心智模型？
 
 1.  **信任链条的断裂**：在 TS 中，如果代码能跑，通常意味着类型大体是对的。在 Python 中，代码能跑，可能只是因为你还没跑到报错的那一行。
 2.  **必须配置静态检查**：写 Python 不配 `pyright` 或 `mypy`，就等于写 TS 不用 `tsc`，是在裸奔。
 3.  **边界防御**：既然类型注解不能阻止脏数据进入函数，那么在处理**外部输入**（API 请求、文件读取）时，你不能盲目相信类型注解。
 
+:::
+
 这也引出了我们将在 **第 9 章（数据建模）** 和 **第 17 章（Pydantic）** 讨论的话题：**既然原生类型注解防不住运行时错误，我们需要专门的库（Pydantic）在运行时强制执行类型检查。**
 
----
-
-**本章小结**
+## 本章小结
 
 我们深入解剖了 Python 函数的契约。
 
@@ -193,6 +199,8 @@ Python 的解释器（Runtime）**完全忽略**类型注解。对解释器来�
 
 下一章，我们将讨论 **模块与工程化**。你会看到 Python 的 `import` 机制与 TS 的 `import` 有何不同，以及如何避免那个让无数人头秃的“循环引用”问题。
 
-> **思考题**：
-> 如果 `def foo(a: int) -> int` 不能阻止我传字符串，那么 Python 标准库里的 `isinstance(a, int)` 函数还有用吗？它和类型注解的关系是什么？
-> （提示：类型注解是编译期（静态）的，`isinstance` 是运行期（动态）的。在“类型收窄”中，它们将完美配合。）
+::: tip 🧠 课后思考
+如果 `def foo(a: int) -> int` 不能阻止我传字符串，那么 Python 标准库里的 `isinstance(a, int)` 函数还有用吗？它和类型注解的关系是什么？
+
+**提示**：类型注解是编译期（静态）的，`isinstance` 是运行期（动态）的。还记得上一章的“类型收窄”吗？它们是最佳拍档。
+:::
