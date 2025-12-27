@@ -1,7 +1,11 @@
 import { defineConfig } from "vitepress";
+import llmstxt from "vitepress-plugin-llms";
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
+  vite: {
+    plugins: [llmstxt()],
+  },
   title: "Python 之美：写给初学者的语言精华",
   description: "现代类型视角的 Python 入门",
   base: "/python-beauty",
@@ -45,7 +49,7 @@ export default defineConfig({
           },
         ],
       },
-      {
+      { 
         text: "第二部分：逻辑之美 —— 结构与工程",
         // collapsed: false,
         items: [

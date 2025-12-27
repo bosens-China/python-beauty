@@ -4,7 +4,8 @@
   "main": "index.js",
   "license": "MIT",
   "devDependencies": {
-    "vitepress": "2.0.0-alpha.15"
+    "vitepress": "2.0.0-alpha.15",
+    "vitepress-plugin-llms": "^1.10.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
