@@ -1,9 +1,7 @@
-# ✉️ 给 TypeScript 开发者的一封信
+# ✉ 给 TypeScript 开发者的一封信
 
-> **"A language does not merely change how you write code; it changes how you think about problems."**
->
-> **“一门语言改变的不只是你写代码的方式，更是你理解问题的方式。”**
->
+> **“A language does not merely change how you write code; it changes how you think about problems.”**  
+> **“一门语言改变的不只是你写代码的方式，更是你理解问题的方式。”**  
 > — _Anonymous_
 
 ---
@@ -31,3 +29,15 @@ Python 的魅力，往往体现在那些不动声色的设计里：
 像问题解决者一样做出取舍（Pragmatic）。
 
 希望这本书，能陪你完成一次克制而愉快的语言迁移。
+
+---
+
+### 📌 补充说明（致零基础读者）
+
+虽然本章以 TypeScript 开发者为对话对象，但本书面向的是**所有编程初学者**。如果你尚未接触过 TypeScript 或 JavaScript，完全不必担心——我们不会假设你具备任何前端或类型系统背景。
+
+在后续章节中，我们会从最基础的 Python 语法讲起，包括变量、函数、控制流等核心概念，并逐步引入现代 Python（基于 3.12 版本）的最佳实践。即使你从未写过一行代码，也能跟上节奏。
+
+此外，书中出现的少量术语（如“类型系统”“接口”“构建工具”等）会在首次出现时提供简明解释。我们的目标不是比较语言优劣，而是帮助你**用 Python 的方式思考和解决问题**。
+
+欢迎来到 Python 的世界！

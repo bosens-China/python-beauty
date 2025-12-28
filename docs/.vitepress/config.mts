@@ -6,8 +6,8 @@ export default defineConfig({
   vite: {
     plugins: [llmstxt()],
   },
-  title: "Python 之美：写给初学者的语言精华",
-  description: "现代类型视角的 Python 入门",
+  title: "Python 之美：一门语言的温柔与克制",
+  description: "写给初学者与转语言者的现代 Python 读本",
   base: "/python-beauty",
   lang: "zh-CN",
   head: [
@@ -17,11 +17,9 @@ export default defineConfig({
     ],
   ],
   themeConfig: {
-    // https://vitepress.dev/reference/default-theme-config
     nav: [
       { text: "开始阅读", link: "/preface/intro" },
-      { text: "章节目录", link: "/ch01-env" },
-      // 如果你有 GitHub 仓库，可以在这里加链接
+      { text: "章节目录", link: "/preface/intro" },
       { text: "GitHub", link: "https://github.com/bosens-China/python-beauty" },
     ],
 
@@ -30,74 +28,78 @@ export default defineConfig({
 
     sidebar: [
       {
-        text: "序言",
+        text: "序 · 在开始之前",
         items: [
-          { text: "写在前面", link: "/preface/intro" },
-          { text: "致 TS 开发者的一封信", link: "/preface/salute-typescript" },
-        ],
-      },
-      {
-        text: "第一部分：初见之美 —— 类型的基石",
-        // collapsed: false,
-        items: [
-          { text: "Python 3.12 新纪元与环境搭建", link: "/ch01-env" },
-          { text: "变量与基本数据类型", link: "/ch02-types" },
-          { text: "容器与泛型基础", link: "/ch03-containers" },
+          { text: "写在前面：为什么是 Python", link: "/preface/intro" },
+          { text: "给初学者与转语言者的一封信", link: "/preface/letter" },
+          { text: "如何阅读这本书", link: "/preface/how-to-read" },
+          { text: "快速启动：搭建现代环境", link: "/preface/quick-start" },
           {
-            text: "Pythonic 之道 —— 推导式与正则",
-            link: "/ch04-pythonic",
-          },
-        ],
-      },
-      { 
-        text: "第二部分：逻辑之美 —— 结构与工程",
-        // collapsed: false,
-        items: [
-          { text: "控制流与类型收窄", link: "/ch05-control" },
-          { text: "函数 —— 代码的契约", link: "/ch06-functions" },
-          {
-            text: "模块与工程化 —— 组织你的代码",
-            link: "/ch07-modules",
+            text: "给 TypeScript 开发者的一封信（选读）",
+            link: "/preface/salute-typescript.md",
           },
         ],
       },
       {
-        text: "第三部分：结构之美 —— 面向对象与数据模型",
-        // collapsed: false,
+        text: "第一部 · 初见 —— 语言的表情",
         items: [
-          { text: "类与面向对象 (OOP)", link: "/ch08-oop" },
-          { text: "数据建模与 IO 边界", link: "/ch09-data-modeling" },
-          { text: "协议 (Protocols)", link: "/ch10-protocols" },
+          { text: "第一眼的温柔", link: "/part1-first-glance/ch01-syntax" },
+          { text: "名字的力量", link: "/part1-first-glance/ch02-variables" },
         ],
       },
       {
-        text: "第四部分：抽象之美 —— 泛型与防御性编程",
-        // collapsed: false,
+        text: "第二部 · 行走 —— 控制与节奏",
         items: [
-          { text: "现代泛型 (Generics)", link: "/ch11-generics" },
-          { text: "防御性编程与类型安全", link: "/ch12-robustness" },
-          { text: "装饰器 (Decorators)", link: "/ch13-decorators" },
-          { text: "上下文管理器", link: "/ch14-context" },
+          { text: "如果世界可以分岔", link: "/part2-walking/ch03-control" },
+          { text: "重复，但不乏味", link: "/part2-walking/ch04-loops" },
+          { text: "意外不是错误", link: "/part2-walking/ch05-exceptions" },
         ],
       },
       {
-        text: "第五部分：生态之美 —— 成本、并发与实战",
-        // collapsed: false,
+        text: "第三部 · 塑形 —— 组织思想的方式",
+        items: [
+          { text: "封装思想", link: "/part3-shaping/ch06-functions" },
+          { text: "盛放数据", link: "/part3-shaping/ch07-containers" },
+        ],
+      },
+      {
+        text: "第四部 · 抽象 —— 当代码开始谈论关系",
+        items: [
+          { text: "类，但不只是类", link: "/part4-abstraction/ch08-classes" },
+          { text: "看不见的接口", link: "/part4-abstraction/ch09-protocols" },
+          {
+            text: "改变行为，而非代码",
+            link: "/part4-abstraction/ch10-decorators",
+          },
+        ],
+      },
+      {
+        text: "第五部 · 边界 —— 与现实世界对话",
         items: [
           {
-            text: "并发的抉择 —— 成本与模型",
-            link: "/ch15-concurrency-cost",
+            text: "数据的形状",
+            link: "/part5-boundaries/ch11-data-structures",
           },
-          { text: "异步编程 (AsyncIO)", link: "/ch16-asyncio" },
-          {
-            text: "实战生态 —— Pydantic 与 FastAPI",
-            link: "/ch17-fastapi",
-          },
+          { text: "不相信输入", link: "/part5-boundaries/ch12-validation" },
         ],
       },
       {
-        text: "结语",
-        items: [{ text: "Python 的平衡之道", link: "/outro" }],
+        text: "第六部 · 并行 —— 时间与成本",
+        items: [
+          { text: "并发的真相", link: "/part6-concurrency/ch13-gil" },
+          { text: "协作而非抢占", link: "/part6-concurrency/ch14-asyncio" },
+        ],
+      },
+      {
+        text: "第七部 · 工程 —— 代码不再属于你一个人",
+        items: [
+          { text: "组织与边界", link: "/part7-engineering/ch15-modules" },
+          { text: "工具不是负担", link: "/part7-engineering/ch16-tools" },
+        ],
+      },
+      {
+        text: "终章",
+        items: [{ text: "克制的力量", link: "/outro/balance" }],
       },
     ],
 
@@ -105,13 +107,11 @@ export default defineConfig({
       { icon: "github", link: "https://github.com/bosens-China/python-beauty" },
     ],
 
-    // 页脚
     footer: {
       message: "Released under the MIT License.",
-      copyright: "Copyright © 2025 Python 之美",
+      copyright: "Copyright © 2025 2025-present yliu",
     },
 
-    // 本地搜索配置
     search: {
       provider: "local",
       options: {
@@ -132,12 +132,10 @@ export default defineConfig({
       },
     },
 
-    // 右侧大纲（页面内导航）
     outline: {
-      level: [2, 3], // 显示 h2 和 h3
+      level: [2, 3],
       label: "本页目录",
     },
-
     // 编辑链接
     editLink: {
       pattern:
