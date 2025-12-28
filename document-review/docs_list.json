@@ -1,0 +1,112 @@
+[
+  {
+    "path": "preface/intro.md",
+    "status": "done",
+    "title": "写在前面：为什么是 Python"
+  },
+  {
+    "path": "preface/letter.md",
+    "status": "done",
+    "title": "给初学者与转语言者的一封信"
+  },
+  {
+    "path": "preface/how-to-read.md",
+    "status": "done",
+    "title": "如何阅读这本书"
+  },
+  {
+    "path": "preface/quick-start.md",
+    "status": "done",
+    "title": "快速启动：搭建现代环境"
+  },
+  {
+    "path": "preface/salute-typescript.md",
+    "status": "done",
+    "title": "给 TypeScript 开发者的一封信"
+  },
+  {
+    "path": "part1-first-glance/ch01-syntax.md",
+    "status": "done",
+    "title": "第一眼的温柔"
+  },
+  {
+    "path": "part1-first-glance/ch02-variables.md",
+    "status": "done",
+    "title": "名字的力量"
+  },
+  {
+    "path": "part2-walking/ch03-control.md",
+    "status": "done",
+    "title": "如果世界可以分岔"
+  },
+  {
+    "path": "part2-walking/ch04-loops.md",
+    "status": "done",
+    "title": "重复，但不乏味"
+  },
+  {
+    "path": "part2-walking/ch05-exceptions.md",
+    "status": "done",
+    "title": "意外不是错误"
+  },
+  {
+    "path": "part3-shaping/ch06-functions.md",
+    "status": "done",
+    "title": "封装思想"
+  },
+  {
+    "path": "part3-shaping/ch07-containers.md",
+    "status": "done",
+    "title": "盛放数据"
+  },
+  {
+    "path": "part4-abstraction/ch08-classes.md",
+    "status": "done",
+    "title": "类，但不只是类"
+  },
+  {
+    "path": "part4-abstraction/ch09-protocols.md",
+    "status": "done",
+    "title": "看不见的接口"
+  },
+  {
+    "path": "part4-abstraction/ch10-decorators.md",
+    "status": "done",
+    "title": "改变行为，而非代码"
+  },
+  {
+    "path": "part5-boundaries/ch11-data-structures.md",
+    "status": "done",
+    "title": "数据的形状"
+  },
+  {
+    "path": "part5-boundaries/ch12-validation.md",
+    "status": "done",
+    "title": "不相信输入"
+  },
+  {
+    "path": "part6-concurrency/ch13-gil.md",
+    "status": "done",
+    "title": "并发的真相"
+  },
+  {
+    "path": "part6-concurrency/ch14-asyncio.md",
+    "status": "done",
+    "title": "协作而非抢占"
+  },
+  {
+    "path": "part7-engineering/ch15-modules.md",
+    "status": "done",
+    "title": "组织与边界"
+  },
+  {
+    "path": "part7-engineering/ch16-tools.md",
+    "status": "done",
+    "title": "工具不是负担"
+  },
+  {
+    "path": "outro/balance.md",
+    "status": "done",
+    "title": "克制的力量"
+  }
+]
