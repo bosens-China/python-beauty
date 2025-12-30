@@ -156,7 +156,7 @@ Running on: /path/to/hello-python/.venv/bin/python
 
 ## 5. 配置编辑器：VS Code + Ruff
 
-优秀的开发体验离不开强大的编辑器支持。我们推荐使用 **Visual Studio Code (VS Code)**，它是目前最流行的免费开源代码编辑器之一。
+优秀的开发体验离不开强大的编辑器支持。我们推荐使用 [**Visual Studio Code (VS Code)**](https://code.visualstudio.com/)，它是目前最流行的免费开源代码编辑器之一。
 
 ### 安装必要扩展
 
